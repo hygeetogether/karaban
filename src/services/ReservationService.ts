@@ -42,20 +42,20 @@ export class ReservationService {
       throw new NotFoundError('Caravan not found');
     }
 
-    if (caravan.status !== 'available') {
-      throw new BadRequestError('Caravan is not available for reservation');
-    }
-
     const totalPrice = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24) * caravan.dailyRate;
-    if ((user.balance || 0) < totalPrice) {
-      throw new InsufficientFundsError();
-    }
-
     const newReservation = new Reservation(id, userId, caravanId, startDate, endDate, totalPrice);
 
     const existingReservations = this.reservationRepository.findByCaravanId(caravanId);
     if (this.reservationValidator.hasOverlap(newReservation, existingReservations)) {
       throw new ReservationConflictError();
+    }
+
+    if ((user.balance || 0) < totalPrice) {
+      throw new InsufficientFundsError();
+    }
+
+    if (caravan.status !== 'available') {
+      throw new BadRequestError('Caravan is not available for reservation');
     }
 
     user.updateBalance(-totalPrice);
@@ -80,28 +80,28 @@ export class ReservationService {
   }
 
   async approveReservation(id: string, hostId: string): Promise<Reservation> {
-    const reservation = this.getReservationById(id);
-    const caravan = this.caravanRepository.findById((await reservation).caravanId);
+    const reservation = await this.getReservationById(id);
+    const caravan = this.caravanRepository.findById(reservation.caravanId);
     if (!caravan || caravan.hostId !== hostId) {
         throw new BadRequestError('Only the host can approve the reservation');
     }
-    (await reservation).approve();
+    reservation.approve();
     return reservation;
   }
 
   async rejectReservation(id: string, hostId: string): Promise<Reservation> {
-    const reservation = this.getReservationById(id);
-    const caravan = this.caravanRepository.findById((await reservation).caravanId);
+    const reservation = await this.getReservationById(id);
+    const caravan = this.caravanRepository.findById(reservation.caravanId);
     if (!caravan || caravan.hostId !== hostId) {
         throw new BadRequestError('Only the host can reject the reservation');
     }
-    (await reservation).reject();
+    reservation.reject();
     return reservation;
   }
 
   async completeReservation(id: string): Promise<Reservation> {
-    const reservation = this.getReservationById(id);
-    (await reservation).complete();
+    const reservation = await this.getReservationById(id);
+    reservation.complete();
     return reservation;
   }
 }

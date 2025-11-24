@@ -53,7 +53,7 @@ describe('ReviewService', () => {
     it('should update the host rating after a review is created', async () => {
         const host = new User('host1', 'host', 'host@test.com', 'host', 'Host', '456', 'pass');
         mockReservationRepo.findById.mockReturnValue(completedReservation);
-        mockUserRepo.findById.mockReturnValueOnce(testUser).mockReturnValueOnce(host);
+        mockUserRepo.findById.mockReturnValue(host);
         mockCaravanRepo.findById.mockReturnValue(testCaravan);
 
         await reviewService.createReview('rev1', 'res1', 'user1', 'host1', 4, 'Good caravan');

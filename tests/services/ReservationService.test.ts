@@ -25,13 +25,14 @@ describe('ReservationService', () => {
 
   const testUser = new User('user1', 'test', 'test@test.com', 'guest', 'Test User', '123', 'pass', 500);
   const testCaravan = new Caravan('caravan1', 'host1', 'Test', 4, [], [], { latitude: 0, longitude: 0 }, 100);
-  const pendingReservation = new Reservation('res1', 'user1', 'caravan1', new Date(), new Date(), 100, 'pending');
+  let pendingReservation: Reservation;
 
   beforeEach(() => {
     mockReservationRepo = new ReservationRepository() as jest.Mocked<ReservationRepository>;
     mockCaravanRepo = new CaravanRepository() as jest.Mocked<CaravanRepository>;
     mockUserRepo = new UserRepository() as jest.Mocked<UserRepository>;
     mockValidator = new ReservationValidator() as jest.Mocked<ReservationValidator>;
+    pendingReservation = new Reservation('res1', 'user1', 'caravan1', new Date(), new Date(), 100, 'pending');
 
     reservationService = new ReservationService(mockReservationRepo, mockCaravanRepo, mockUserRepo, mockValidator);
   });
@@ -79,7 +80,7 @@ describe('ReservationService', () => {
 
   describe('approveReservation', () => {
     it('should approve a pending reservation successfully', async () => {
-      mockReservationRepo.findById.mockImplementation(() => Promise.resolve(pendingReservation));
+      mockReservationRepo.findById.mockReturnValue(pendingReservation);
       mockCaravanRepo.findById.mockReturnValue(testCaravan);
 
       const approvedReservation = await reservationService.approveReservation('res1', 'host1');
@@ -88,12 +89,12 @@ describe('ReservationService', () => {
     });
 
     it('should throw NotFoundError if reservation does not exist', async () => {
-      mockReservationRepo.findById.mockImplementation(() => Promise.resolve(undefined));
+      mockReservationRepo.findById.mockReturnValue(undefined);
       await expect(reservationService.approveReservation('res1', 'host1')).rejects.toThrow(NotFoundError);
     });
 
     it('should throw BadRequestError if hostId does not match', async () => {
-      mockReservationRepo.findById.mockImplementation(() => Promise.resolve(pendingReservation));
+      mockReservationRepo.findById.mockReturnValue(pendingReservation);
       mockCaravanRepo.findById.mockReturnValue(testCaravan);
 
       await expect(reservationService.approveReservation('res1', 'wrongHost')).rejects.toThrow(BadRequestError);
@@ -102,7 +103,7 @@ describe('ReservationService', () => {
 
   describe('rejectReservation', () => {
     it('should reject a pending reservation successfully', async () => {
-      mockReservationRepo.findById.mockImplementation(() => Promise.resolve(pendingReservation));
+      mockReservationRepo.findById.mockReturnValue(pendingReservation);
       mockCaravanRepo.findById.mockReturnValue(testCaravan);
 
       const rejectedReservation = await reservationService.rejectReservation('res1', 'host1');
@@ -111,12 +112,12 @@ describe('ReservationService', () => {
     });
 
     it('should throw NotFoundError if reservation does not exist', async () => {
-      mockReservationRepo.findById.mockImplementation(() => Promise.resolve(undefined));
+      mockReservationRepo.findById.mockReturnValue(undefined);
       await expect(reservationService.rejectReservation('res1', 'host1')).rejects.toThrow(NotFoundError);
     });
 
     it('should throw BadRequestError if hostId does not match', async () => {
-      mockReservationRepo.findById.mockImplementation(() => Promise.resolve(pendingReservation));
+      mockReservationRepo.findById.mockReturnValue(pendingReservation);
       mockCaravanRepo.findById.mockReturnValue(testCaravan);
 
       await expect(reservationService.rejectReservation('res1', 'wrongHost')).rejects.toThrow(BadRequestError);
