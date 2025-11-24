@@ -2,10 +2,14 @@
   "name": "src",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "dev": "nodemon index.ts"
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "start": "pm2 start dist/index.js --name caravan-app",
+    "stop": "pm2 stop caravan-app",
+    "restart": "pm2 restart caravan-app"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +24,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "nodemon": "^3.1.10",
+    "pm2": "^5.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "uuid": "^9.0.1"
