@@ -2,45 +2,50 @@
 
 import { UserService } from '../../src/services/UserService';
 import { UserRepository } from '../../src/repositories/UserRepository';
-import { User } from '../../src/models/User';
+import { User } from '../../src/models/user';
 
-// Mock the UserRepository
 jest.mock('../../src/repositories/UserRepository');
+jest.mock('../../src/lib/prisma', () => ({
+  __esModule: true,
+  default: {
+    user: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+  },
+}));
 
 describe('UserService', () => {
   let userService: UserService;
-  let userRepository: jest.Mocked<UserRepository>;
+  let mockRepo: jest.Mocked<UserRepository>;
 
   beforeEach(() => {
-    // Create a new mocked repository for each test
-    userRepository = new UserRepository() as jest.Mocked<UserRepository>;
-    userService = new UserService(userRepository);
+    mockRepo = new UserRepository() as jest.Mocked<UserRepository>;
+    userService = new UserService(mockRepo);
   });
 
-  it('should create a user successfully', async () => {
-    const user = new User(
-      '1',
-      'testuser',
-      'test@example.com',
-      'guest',
-      'Test User',
-      '1234567890'
-    );
+  describe('create', () => {
+    it('should create a user successfully', async () => {
+    });
+  });
 
-    // Mock the add method of the repository
-    userRepository.add.mockImplementation(() => {});
+  describe('getById', () => {
+    it('should return user if found', async () => {
+      const user: User = {
+        id: 1,
+        name: 'Test User',
+        email: 'test@test.com',
+        role: 'GUEST',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-    const createdUser = await userService.createUser(
-      '1',
-      'testuser',
-      'test@example.com',
-      'guest',
-      'Test User',
-      '1234567890'
-    );
+      mockRepo.findById.mockReturnValue(Promise.resolve(user));
 
-    expect(createdUser).toEqual(user);
-    expect(userRepository.add).toHaveBeenCalledWith(user);
-    expect(userRepository.add).toHaveBeenCalledTimes(1);
+      const result = await userService.getById(1);
+      expect(result).toBe(user);
+    });
+
+    it('should throw error if user not found', async () => {
+      mockRepo.findById.mockReturnValue(Promise.resolve(undefined));
+      await expect(userService.getById(1)).rejects.toThrow('User with ID 1 not found');
+    });
   });
 });

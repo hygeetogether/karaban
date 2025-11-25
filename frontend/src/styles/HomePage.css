@@ -1,0 +1,111 @@
+.header {
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--spacing-md) 0;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-primary);
+    font-weight: bold;
+    font-size: 24px;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs) var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s;
+}
+
+.search-bar:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.search-option {
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 var(--spacing-sm);
+}
+
+.divider {
+    color: var(--color-border);
+}
+
+.placeholder {
+    color: var(--color-text-secondary);
+    font-weight: 400;
+}
+
+.search-icon-wrapper {
+    background-color: var(--color-primary);
+    border-radius: 50%;
+    padding: 10px;
+    margin-left: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.host-link {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.profile-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+}
+
+.profile-menu:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.user-icon {
+    background-color: var(--color-text-secondary);
+    color: white;
+    border-radius: 50%;
+    padding: 2px;
+}
+
+.hero-section {
+    padding: var(--spacing-xxl) 0;
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-size: 48px;
+    margin-bottom: var(--spacing-md);
+}
+
+.hero-section p {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-xl);
+}

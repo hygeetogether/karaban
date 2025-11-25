@@ -1,108 +1,79 @@
-# CaravanShare - 백엔드
+# CaravanShare
 
-캐러밴 공유 및 대여 플랫폼 **CaravanShare** 애플리케이션의 백엔드 소스 코드입니다.
+CaravanShare is a peer-to-peer caravan sharing platform that allows users to list their caravans and others to book them for their next adventure.
 
-## 📖 프로젝트 개요
+## Features
 
-본 백엔드 서버는 **Node.js**, **Express**, 그리고 **TypeScript**를 기반으로 구축되었습니다. 또한, 클린 아키텍처 원칙을 따라 각 계층의 역할을 명확히 분리하여 유지보수성과 확장성을 높였습니다.
+- **User Accounts**: Sign up as a Guest or Host.
+- **Caravan Listings**: Hosts can list caravans with photos, amenities, and pricing.
+- **Search & Filter**: Guests can search for caravans by location and price.
+- **Reservations**: Guests can book caravans for specific dates.
+- **Payments**: Mock payment integration to confirm bookings.
+- **Reviews**: Guests can leave reviews and ratings for caravans.
 
--   **`src/controllers`**: HTTP 요청(Request)을 받아 처리하고 응답(Response)을 반환합니다.
--   **`src/services`**: 애플리케이션의 핵심 비즈니스 로직을 포함합니다.
--   **`src/repositories`**: 데이터베이스와의 상호작용을 추상화하여 일관된 API를 제공합니다. 현재는 빠른 프로토타이핑을 위해 인-메모리(In-memory) 데이터 저장소를 사용합니다.
--   **`src/models`**: 애플리케이션의 도메인 데이터 구조를 정의합니다.
--   **`src/errors`**: 커스텀 에러 클래스를 정의하여 에러 처리를 표준화합니다.
--   **`src/container`**: 의존성 주입(DI)을 관리하여 서비스 및 리포지토리의 인스턴스를 싱글톤으로 유지합니다.
+## Tech Stack
 
-## 🛠️ 기술 스택
+- **Backend**: Node.js, Express, TypeScript, Prisma, SQLite (Dev) / PostgreSQL (Prod)
+- **Frontend**: React, TypeScript, Vite, CSS Modules
+- **Testing**: Jest (Backend)
 
--   **런타임**: Node.js
--   **프레임워크**: Express.js
--   **언어**: TypeScript
--   **테스트**: Jest, ts-jest
--   **기타**: nodemon, ts-node
+## Getting Started
 
-## 🚀 시작하기
+### Prerequisites
 
-### 전제 조건
+- Node.js (v18+)
+- npm
 
--   Node.js (v16 이상)
--   npm
+### Installation
 
-### 설치
-
-1.  프로젝트의 루트 디렉터리에서 다음 명령어를 실행하여 필요한 의존성을 설치합니다.
+1.  **Clone the repository**
     ```bash
+    git clone <repository-url>
+    cd karaban
+    ```
+
+2.  **Backend Setup**
+    ```bash
+    # Install dependencies
     npm install
-    ```
 
-2.  (선택 사항) 설치 과정에서 발견된 보안 취약점을 해결합니다.
+    # Initialize Database
+    npx prisma migrate dev --name init
+    npx prisma generate
+    npm run seed # Optional: Seed with dummy data
+
+    # Start Backend Server
+    npm run dev
+    ```
+    The backend runs on `http://localhost:3000`.
+
+3.  **Frontend Setup**
     ```bash
-    npm audit fix
+    cd frontend
+
+    # Install dependencies
+    npm install
+
+    # Start Frontend Server
+    npm run dev
     ```
+    The frontend runs on `http://localhost:5173`.
 
-### 개발 서버 실행
+## Project Structure
 
-파일 변경 시 자동으로 서버를 재시작하는 개발 서버를 실행하려면 다음 명령어를 사용하세요.
+- `src/`: Backend source code (Controllers, Services, Repositories, Models)
+- `frontend/`: Frontend React application
+- `prisma/`: Database schema and migrations
+- `tests/`: Backend unit tests
 
-```bash
-npm run dev
-```
+## API Documentation
 
-서버는 `http://localhost:3001` 주소에서 실행됩니다.
+- `GET /caravans`: List all caravans (supports filtering)
+- `GET /caravans/:id`: Get caravan details
+- `POST /reservations`: Create a reservation
+- `POST /payments`: Process a payment
+- `POST /reviews`: Submit a review
 
-### 테스트 실행
+## License
 
-유닛 및 통합 테스트를 실행하려면 다음 명령어를 사용하세요.
-
-```bash
-npm test
-```
-
-## 📝 API 엔드포인트
-
-### 사용자 관리 (`/api/users`)
-
-| Method | Endpoint         | 설명                       |
-| :----- | :--------------- | :------------------------- |
-| `POST` | `/register`      | 새 사용자(호스트 또는 게스트) 등록 |
-| `POST` | `/login`         | 사용자 로그인              |
-
-### 캐러밴 관리 (`/api/caravans`)
-
-| Method | Endpoint         | 설명                       |
-| :----- | :--------------- | :------------------------- |
-| `POST` | `/`              | 새 캐러밴 생성 (호스트 권한 필요) |
-| `GET`  | `/`              | 모든 캐러밴 목록 조회      |
-| `GET`  | `/:id`           | 특정 캐러밴 상세 정보 조회 |
-
-### 예약 시스템 (`/api/reservations`)
-
-| Method  | Endpoint           | 설명                           |
-| :------ | :----------------- | :----------------------------- |
-| `POST`  | `/`                | 새 예약 요청 생성              |
-| `PATCH` | `/:id/approve`     | 예약 승인 (호스트 권한 필요)   |
-| `PATCH` | `/:id/reject`      | 예약 거절 (호스트 권한 필요)   |
-| `PATCH` | `/:id/complete`    | 완료된 예약으로 상태 변경      |
-
-### 결제 시스템 (`/api/payments`)
-
-| Method | Endpoint             | 설명                               |
-| :----- | :------------------- | :--------------------------------- |
-| `POST` | `/`                  | 예약에 대한 결제 처리 (자동 승인됨) |
-| `GET`  | `/history/:userId`   | 특정 사용자의 결제 내역 조회       |
-
-### 리뷰 시스템 (`/api/reviews`)
-
-| Method | Endpoint         | 설명                       |
-| :----- | :--------------- | :------------------------- |
-| `POST` | `/`              | 완료된 예약에 대한 리뷰 작성 |
-
-## 📦 배포
-
-이 애플리케이션을 클라우드(AWS EC2)에 배포하는 방법에 대한 자세한 안내는 아래 문서를 참고하세요.
-
--   **[배포 가이드](./DEPLOYMENT.md)**
-
-배포가 완료되면 아래에 실제 접속 가능한 주소를 기입할 수 있습니다.
-
--   **배포 URL:** `배포 후 여기에 URL을 입력하세요.`
+MIT

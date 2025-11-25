@@ -1,107 +1,43 @@
-// src/services/ReservationService.ts
-
-import { Reservation } from '../models/Reservation';
+import { Reservation } from '../models/reservation';
 import { ReservationRepository } from '../repositories/ReservationRepository';
-import { CaravanRepository } from '../repositories/CaravanRepository';
-import { UserRepository } from '../repositories/UserRepository';
 import { ReservationValidator } from './ReservationValidator';
-import { NotFoundError, BadRequestError } from '../errors/HttpErrors';
-import { ReservationConflictError, InsufficientFundsError, InvalidReservationStatusError } from '../errors/DomainErrors';
 
+/**
+ * ReservationService orchestrates reservation creation and status updates.
+ * It receives a repository and a validator via dependency injection for testability.
+ */
 export class ReservationService {
   constructor(
-    private reservationRepository: ReservationRepository,
-    private caravanRepository: CaravanRepository,
-    private userRepository: UserRepository,
-    private reservationValidator: ReservationValidator
-  ) {}
+    private repo: ReservationRepository,
+    private validator: ReservationValidator,
+  ) { }
 
   /**
-   * Creates a new reservation.
-   * @param id The reservation's ID.
-   * @param userId The ID of the user making the reservation.
-   * @param caravanId The ID of the caravan being reserved.
-   * @param startDate The start date of the reservation.
-   * @param endDate The end date of the reservation.
-   * @returns The newly created reservation.
+   * Creates a new reservation after validation.
+   * Throws an Error if validation fails.
    */
-  async createReservation(
-    id: string,
-    userId: string,
-    caravanId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<Reservation> {
-    const user = this.userRepository.findById(userId);
-    if (!user) {
-      throw new NotFoundError('User not found');
+  async create(reservation: Reservation): Promise<Reservation> {
+    const result = await this.validator.isValid(reservation);
+    if (!result.valid) {
+      throw new Error(`Reservation validation failed: ${result.reason}`);
     }
-
-    const caravan = this.caravanRepository.findById(caravanId);
-    if (!caravan) {
-      throw new NotFoundError('Caravan not found');
-    }
-
-    const totalPrice = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24) * caravan.dailyRate;
-    const newReservation = new Reservation(id, userId, caravanId, startDate, endDate, totalPrice);
-
-    const existingReservations = this.reservationRepository.findByCaravanId(caravanId);
-    if (this.reservationValidator.hasOverlap(newReservation, existingReservations)) {
-      throw new ReservationConflictError();
-    }
-
-    if ((user.balance || 0) < totalPrice) {
-      throw new InsufficientFundsError();
-    }
-
-    if (caravan.status !== 'available') {
-      throw new BadRequestError('Caravan is not available for reservation');
-    }
-
-    user.updateBalance(-totalPrice);
-    caravan.updateStatus('reserved');
-    this.reservationRepository.add(newReservation);
-
-    return newReservation;
+    await this.repo.add(reservation);
+    return reservation;
   }
 
   /**
-   * Gets a reservation by its ID.
-   * @param id The ID of the reservation to retrieve.
-   * @returns The reservation if found.
-   * @throws NotFoundError if the reservation is not found.
+   * Updates the status of an existing reservation.
+   * Returns the updated reservation or throws if not found.
    */
-  async getReservationById(id: string): Promise<Reservation> {
-    const reservation = this.reservationRepository.findById(id);
-    if (!reservation) {
-      throw new NotFoundError('Reservation not found');
+  async updateStatus(id: number, status: Reservation['status']): Promise<Reservation> {
+    const updated = await this.repo.update(id, { status });
+    if (!updated) {
+      throw new Error('Reservation not found');
     }
-    return reservation;
+    return updated;
   }
 
-  async approveReservation(id: string, hostId: string): Promise<Reservation> {
-    const reservation = await this.getReservationById(id);
-    const caravan = this.caravanRepository.findById(reservation.caravanId);
-    if (!caravan || caravan.hostId !== hostId) {
-        throw new BadRequestError('Only the host can approve the reservation');
-    }
-    reservation.approve();
-    return reservation;
-  }
-
-  async rejectReservation(id: string, hostId: string): Promise<Reservation> {
-    const reservation = await this.getReservationById(id);
-    const caravan = this.caravanRepository.findById(reservation.caravanId);
-    if (!caravan || caravan.hostId !== hostId) {
-        throw new BadRequestError('Only the host can reject the reservation');
-    }
-    reservation.reject();
-    return reservation;
-  }
-
-  async completeReservation(id: string): Promise<Reservation> {
-    const reservation = await this.getReservationById(id);
-    reservation.complete();
-    return reservation;
+  async getByUserId(userId: number): Promise<Reservation[]> {
+    return this.repo.findByUserId(userId);
   }
 }

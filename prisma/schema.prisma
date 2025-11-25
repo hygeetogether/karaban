@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+}
+
+
+enum Role {
+  HOST
+  GUEST
+}
+
+enum CaravanStatus {
+  AVAILABLE
+  BOOKED
+  MAINTENANCE
+}
+
+enum ReservationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  role      Role
+  rating    Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  caravans     Caravan[]
+  reservations Reservation[]
+  payments     Payment[]     @relation("UserPayments") // Optional: if we want to track who made payment
+  reviewsGiven Review[]      @relation("Reviewer")
+  reviewsReceived Review[]   @relation("Reviewee")
+}
+
+model Caravan {
+  id          Int           @id @default(autoincrement())
+  ownerId     Int
+  owner       User          @relation(fields: [ownerId], references: [id])
+  name        String
+  capacity    Int
+  amenities   Json          // String[]
+  photos      Json          // String[]
+  location    Json          // { latitude: number, longitude: number, address: string }
+  status      CaravanStatus
+  dailyRate   Float
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  reservations Reservation[]
+}
+
+model Reservation {
+  id         Int               @id @default(autoincrement())
+  userId     Int
+  user       User              @relation(fields: [userId], references: [id])
+  caravanId  Int
+  caravan    Caravan           @relation(fields: [caravanId], references: [id])
+  startDate  DateTime
+  endDate    DateTime
+  status     ReservationStatus
+  totalPrice Float
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  payment    Payment?
+  review     Review?
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  reservationId Int           @unique
+  reservation   Reservation   @relation(fields: [reservationId], references: [id])
+  userId        Int?          // Optional link to user who paid
+  user          User?         @relation("UserPayments", fields: [userId], references: [id])
+  amount        Float
+  paymentDate   DateTime      @default(now())
+  status        PaymentStatus
+}
+
+model Review {
+  id            Int         @id @default(autoincrement())
+  reservationId Int         @unique
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  reviewerId    Int
+  reviewer      User        @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId    Int
+  reviewee      User        @relation("Reviewee", fields: [revieweeId], references: [id])
+  rating        Int
+  comment       String
+  reviewDate    DateTime    @default(now())
+}

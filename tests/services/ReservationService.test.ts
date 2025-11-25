@@ -2,125 +2,99 @@
 
 import { ReservationService } from '../../src/services/ReservationService';
 import { ReservationRepository } from '../../src/repositories/ReservationRepository';
-import { CaravanRepository } from '../../src/repositories/CaravanRepository';
-import { UserRepository } from '../../src/repositories/UserRepository';
 import { ReservationValidator } from '../../src/services/ReservationValidator';
-import { User } from '../../src/models/User';
-import { Caravan } from '../../src/models/Caravan';
-import { Reservation } from '../../src/models/Reservation';
-import { NotFoundError, BadRequestError } from '../../src/errors/HttpErrors';
-import { ReservationConflictError, InsufficientFundsError } from '../../src/errors/DomainErrors';
+import { Reservation } from '../../src/models/reservation';
 
 jest.mock('../../src/repositories/ReservationRepository');
-jest.mock('../../src/repositories/CaravanRepository');
-jest.mock('../../src/repositories/UserRepository');
 jest.mock('../../src/services/ReservationValidator');
+jest.mock('../../src/lib/prisma', () => ({
+  __esModule: true,
+  default: {
+    reservation: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+  },
+}));
 
 describe('ReservationService', () => {
   let reservationService: ReservationService;
-  let mockReservationRepo: jest.Mocked<ReservationRepository>;
-  let mockCaravanRepo: jest.Mocked<CaravanRepository>;
-  let mockUserRepo: jest.Mocked<UserRepository>;
+  let mockRepo: jest.Mocked<ReservationRepository>;
   let mockValidator: jest.Mocked<ReservationValidator>;
 
-  const testUser = new User('user1', 'test', 'test@test.com', 'guest', 'Test User', '123', 'pass', 500);
-  const testCaravan = new Caravan('caravan1', 'host1', 'Test', 4, [], [], { latitude: 0, longitude: 0 }, 100);
-  let pendingReservation: Reservation;
-
   beforeEach(() => {
-    mockReservationRepo = new ReservationRepository() as jest.Mocked<ReservationRepository>;
-    mockCaravanRepo = new CaravanRepository() as jest.Mocked<CaravanRepository>;
-    mockUserRepo = new UserRepository() as jest.Mocked<UserRepository>;
-    mockValidator = new ReservationValidator() as jest.Mocked<ReservationValidator>;
-    pendingReservation = new Reservation('res1', 'user1', 'caravan1', new Date(), new Date(), 100, 'pending');
-
-    reservationService = new ReservationService(mockReservationRepo, mockCaravanRepo, mockUserRepo, mockValidator);
+    mockRepo = new ReservationRepository() as jest.Mocked<ReservationRepository>;
+    mockValidator = new ReservationValidator(mockRepo) as jest.Mocked<ReservationValidator>;
+    reservationService = new ReservationService(mockRepo, mockValidator);
   });
 
-  describe('createReservation', () => {
-    it('should create a reservation successfully', async () => {
-      mockUserRepo.findById.mockReturnValue(testUser);
-      mockCaravanRepo.findById.mockReturnValue(testCaravan);
-      mockValidator.hasOverlap.mockReturnValue(false);
+  describe('create', () => {
+    it('should create a reservation if validation passes', async () => {
+      const reservation: Reservation = {
+        id: 1,
+        userId: 1,
+        caravanId: 1,
+        startDate: new Date(),
+        endDate: new Date(),
+        status: 'PENDING',
+        totalPrice: 100,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-      const startDate = new Date('2025-08-01');
-      const endDate = new Date('2025-08-05');
-      const reservation = await reservationService.createReservation('res2', 'user1', 'caravan1', startDate, endDate);
+      mockValidator.isValid.mockReturnValue(Promise.resolve({ valid: true }));
+      mockRepo.add.mockImplementation(() => Promise.resolve());
 
-      expect(reservation).toBeDefined();
-      expect(reservation.totalPrice).toBe(400); // 4 days * 100 daily rate
-      expect(mockReservationRepo.add).toHaveBeenCalledWith(reservation);
+      const result = await reservationService.create(reservation);
+
+      expect(mockValidator.isValid).toHaveBeenCalledWith(reservation);
+      expect(mockRepo.add).toHaveBeenCalledWith(reservation);
+      expect(result).toBe(reservation);
     });
 
-    it('should throw NotFoundError if user does not exist', async () => {
-      mockUserRepo.findById.mockReturnValue(undefined);
-      const dates = { start: new Date('2025-08-01'), end: new Date('2025-08-05') };
-      await expect(reservationService.createReservation('res2', 'user1', 'caravan1', dates.start, dates.end))
-        .rejects.toThrow(NotFoundError);
-    });
+    it('should throw error if validation fails', async () => {
+      const reservation: Reservation = {
+        id: 1,
+        userId: 1,
+        caravanId: 1,
+        startDate: new Date(),
+        endDate: new Date(),
+        status: 'PENDING',
+        totalPrice: 100,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-    it('should throw InsufficientFundsError if user has insufficient funds', async () => {
-        const userWithLowBalance = new User('user1', 'test', 'test@test.com', 'guest', 'Test User', '123', 'pass', 100);
-        mockUserRepo.findById.mockReturnValue(userWithLowBalance);
-        mockCaravanRepo.findById.mockReturnValue(testCaravan);
-        const dates = { start: new Date('2025-08-01'), end: new Date('2025-08-05') };
-        await expect(reservationService.createReservation('res2', 'user1', 'caravan1', dates.start, dates.end))
-            .rejects.toThrow(InsufficientFundsError);
-    });
+      mockValidator.isValid.mockReturnValue(Promise.resolve({ valid: false, reason: 'Overlap' }));
 
-    it('should throw ReservationConflictError if reservations overlap', async () => {
-        mockUserRepo.findById.mockReturnValue(testUser);
-        mockCaravanRepo.findById.mockReturnValue(testCaravan);
-        mockValidator.hasOverlap.mockReturnValue(true); // Simulate validation failure
-        const dates = { start: new Date('2025-08-01'), end: new Date('2025-08-05') };
-        await expect(reservationService.createReservation('res2', 'user1', 'caravan1', dates.start, dates.end))
-          .rejects.toThrow(ReservationConflictError);
-    });
-  });
-
-  describe('approveReservation', () => {
-    it('should approve a pending reservation successfully', async () => {
-      mockReservationRepo.findById.mockReturnValue(pendingReservation);
-      mockCaravanRepo.findById.mockReturnValue(testCaravan);
-
-      const approvedReservation = await reservationService.approveReservation('res1', 'host1');
-
-      expect(approvedReservation.status).toBe('approved');
-    });
-
-    it('should throw NotFoundError if reservation does not exist', async () => {
-      mockReservationRepo.findById.mockReturnValue(undefined);
-      await expect(reservationService.approveReservation('res1', 'host1')).rejects.toThrow(NotFoundError);
-    });
-
-    it('should throw BadRequestError if hostId does not match', async () => {
-      mockReservationRepo.findById.mockReturnValue(pendingReservation);
-      mockCaravanRepo.findById.mockReturnValue(testCaravan);
-
-      await expect(reservationService.approveReservation('res1', 'wrongHost')).rejects.toThrow(BadRequestError);
+      await expect(reservationService.create(reservation)).rejects.toThrow('Reservation validation failed: Overlap');
+      expect(mockRepo.add).not.toHaveBeenCalled();
     });
   });
 
-  describe('rejectReservation', () => {
-    it('should reject a pending reservation successfully', async () => {
-      mockReservationRepo.findById.mockReturnValue(pendingReservation);
-      mockCaravanRepo.findById.mockReturnValue(testCaravan);
+  describe('updateStatus', () => {
+    it('should update status successfully', async () => {
+      const reservation: Reservation = {
+        id: 1,
+        userId: 1,
+        caravanId: 1,
+        startDate: new Date(),
+        endDate: new Date(),
+        status: 'APPROVED',
+        totalPrice: 100,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-      const rejectedReservation = await reservationService.rejectReservation('res1', 'host1');
+      mockRepo.update.mockReturnValue(Promise.resolve(reservation));
 
-      expect(rejectedReservation.status).toBe('rejected');
+      const result = await reservationService.updateStatus(1, 'APPROVED');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(1, { status: 'APPROVED' });
+      expect(result).toBe(reservation);
     });
 
-    it('should throw NotFoundError if reservation does not exist', async () => {
-      mockReservationRepo.findById.mockReturnValue(undefined);
-      await expect(reservationService.rejectReservation('res1', 'host1')).rejects.toThrow(NotFoundError);
-    });
+    it('should throw error if reservation not found', async () => {
+      mockRepo.update.mockReturnValue(Promise.resolve(undefined));
 
-    it('should throw BadRequestError if hostId does not match', async () => {
-      mockReservationRepo.findById.mockReturnValue(pendingReservation);
-      mockCaravanRepo.findById.mockReturnValue(testCaravan);
-
-      await expect(reservationService.rejectReservation('res1', 'wrongHost')).rejects.toThrow(BadRequestError);
+      await expect(reservationService.updateStatus(1, 'APPROVED')).rejects.toThrow('Reservation not found');
     });
   });
 });

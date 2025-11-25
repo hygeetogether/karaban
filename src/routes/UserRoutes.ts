@@ -1,17 +1,14 @@
 // src/routes/UserRoutes.ts
 
 import { Router } from 'express';
-import { createUserController } from '../controllers/UserController';
+import { UserController } from '../controllers/UserController';
 import { userService } from '../container';
 
 const router = Router();
+const controller = new UserController(userService);
 
-// Get dependencies from the container
-const userController = createUserController(userService);
-
-// Define routes
-router.post('/register', userController.registerUser);
-router.get('/:id', userController.getUserById);
-router.get('/', userController.getAllUsers);
+router.post('/', controller.create);
+router.get('/:id', controller.getById);
+router.get('/', controller.getAll);
 
 export default router;

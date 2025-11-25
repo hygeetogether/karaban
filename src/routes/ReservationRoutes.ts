@@ -1,16 +1,16 @@
 // src/routes/ReservationRoutes.ts
 
 import { Router } from 'express';
-import { createReservationController } from '../controllers/ReservationController';
+import { ReservationController } from '../controllers/ReservationController';
 import { reservationService } from '../container';
 
 const router = Router();
 
-const reservationController = createReservationController(reservationService);
+// Inject the service from the container
+const reservationController = new ReservationController(reservationService);
 
 router.post('/', reservationController.createReservation);
-router.patch('/:id/approve', reservationController.approveReservation);
-router.patch('/:id/reject', reservationController.rejectReservation);
-router.patch('/:id/complete', reservationController.completeReservation);
+router.get('/', reservationController.getUserReservations);
+router.patch('/:id/status', reservationController.updateStatus);
 
 export default router;

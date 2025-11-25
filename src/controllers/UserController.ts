@@ -1,48 +1,36 @@
 // src/controllers/UserController.ts
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { UserService } from '../services/UserService';
-import { BadRequestError } from '../errors/HttpErrors';
 
-export const createUserController = (userService: UserService) => {
-  
-  const registerUser = async (req: Request, res: Response, next: NextFunction) => {
+export class UserController {
+  constructor(private service: UserService) { }
+
+  create = async (req: Request, res: Response) => {
     try {
-      const { id, username, email, password, role, name, contact } = req.body;
-
-      if (!id || !username || !email || !password || !role || !name || !contact) {
-        throw new BadRequestError('All fields are required');
-      }
-
-      const user = await userService.createUser(id, username, email, password, role, name, contact);
-      res.status(201).json({ message: 'User registered successfully', user });
-    } catch (error) {
-      next(error);
+      const user = await this.service.create(req.body);
+      res.status(201).json(user);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
     }
   };
 
-  const getUserById = async (req: Request, res: Response, next: NextFunction) => {
+  getById = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const user = await userService.getUserById(id);
-      res.status(200).json(user);
-    } catch (error) {
-      next(error);
+      const user = await this.service.getById(Number(id));
+      res.json(user);
+    } catch (e) {
+      res.status(404).json({ error: (e as Error).message });
     }
   };
 
-  const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
+  getAll = async (req: Request, res: Response) => {
     try {
-      const users = await userService.getAllUsers();
-      res.status(200).json(users);
-    } catch (error) {
-      next(error);
+      const users = await this.service.getAll();
+      res.json(users);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
     }
   };
-
-  // Note: A login method would also be here, likely in the UserService,
-  // handling password verification and JWT generation.
-  // For simplicity, we've omitted it from this refactoring.
-
-  return { registerUser, getUserById, getAllUsers };
-};
+}

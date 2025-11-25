@@ -1,14 +1,14 @@
 // src/routes/PaymentRoutes.ts
 
 import { Router } from 'express';
-import { createPaymentController } from '../controllers/PaymentController';
+import { PaymentController } from '../controllers/PaymentController';
 import { paymentService } from '../container';
 
 const router = Router();
+const controller = new PaymentController(paymentService);
 
-const paymentController = createPaymentController(paymentService);
-
-router.post('/', paymentController.createPayment);
-router.get('/history/:userId', paymentController.getPaymentHistory);
+router.post('/', controller.create);
+router.get('/:id', controller.getById);
+router.get('/user/:userId', controller.getHistory);
 
 export default router;

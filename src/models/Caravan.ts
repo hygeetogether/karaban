@@ -1,42 +1,21 @@
-// src/models/Caravan.ts
+import { CaravanStatus } from '@prisma/client';
 
-export class Caravan {
-  id: string;
-  hostId: string;
+export { CaravanStatus };
+
+export interface Caravan {
+  id: number;
+  ownerId: number; // user id of the host
   name: string;
-  capacity: number;
-  amenities: string[];
-  photos: string[];
+  capacity: number; // number of passengers
+  amenities: string[]; // e.g., ['WiFi', 'Kitchen']
+  photos: string[]; // URLs to images
   location: {
     latitude: number;
     longitude: number;
+    address: string;
   };
-  status: 'available' | 'reserved' | 'maintenance';
-  dailyRate: number;
-
-  constructor(
-    id: string,
-    hostId: string,
-    name: string,
-    capacity: number,
-    amenities: string[],
-    photos: string[],
-    location: { latitude: number; longitude: number },
-    dailyRate: number,
-    status: 'available' | 'reserved' | 'maintenance' = 'available',
-  ) {
-    this.id = id;
-    this.hostId = hostId;
-    this.name = name;
-    this.capacity = capacity;
-    this.amenities = amenities;
-    this.photos = photos;
-    this.location = location;
-    this.status = status;
-    this.dailyRate = dailyRate;
-  }
-
-  updateStatus(newStatus: 'available' | 'reserved' | 'maintenance'): void {
-    this.status = newStatus;
-  }
+  status: CaravanStatus;
+  dailyRate: number; // price per day in KRW
+  createdAt: Date;
+  updatedAt: Date;
 }

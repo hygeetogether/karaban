@@ -1,68 +1,53 @@
-// src/services/PaymentService.ts
-
-import { Payment } from '../models/Payment';
+import { Payment } from '../models/payment';
 import { PaymentRepository } from '../repositories/PaymentRepository';
 import { ReservationRepository } from '../repositories/ReservationRepository';
 import { UserRepository } from '../repositories/UserRepository';
-import { CaravanRepository } from '../repositories/CaravanRepository';
-import { ReservationService } from './ReservationService';
-import { NotFoundError, BadRequestError } from '../errors/HttpErrors';
+import { NotFoundError } from '../errors/HttpErrors';
 
 export class PaymentService {
   constructor(
-    private userRepository: UserRepository,
-    private reservationRepository: ReservationRepository,
     private paymentRepository: PaymentRepository,
-    private caravanRepository: CaravanRepository,
-    private reservationService: ReservationService
-  ) {}
+    private reservationRepository: ReservationRepository,
+    private userRepository: UserRepository
+  ) { }
 
-  /**
-   * Creates a new payment for a reservation.
-   * @param id The payment's ID.
-   * @param reservationId The ID of the reservation.
-   * @returns The newly created payment.
-   */
-  async createPayment(id: string, reservationId: string): Promise<Payment> {
-    const reservation = this.reservationRepository.findById(reservationId);
+  async create(reservationId: number, amount: number): Promise<Payment> {
+    const reservation = await this.reservationRepository.findById(reservationId);
     if (!reservation) {
       throw new NotFoundError('Reservation not found');
     }
 
-    const user = this.userRepository.findById(reservation.userId);
+    const user = await this.userRepository.findById(reservation.userId);
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    const payment = new Payment(id, reservationId, reservation.totalPrice, new Date());
-    payment.complete();
-    this.paymentRepository.add(payment);
+    const payment: Payment = {
+      id: 0,
+      reservationId,
+      userId: reservation.userId,
+      amount,
+      paymentDate: new Date(),
+      status: 'COMPLETED'
+    };
+
+    await this.paymentRepository.add(payment);
+
+    // Update reservation status to CONFIRMED
+    await this.reservationRepository.updateStatus(reservationId, 'CONFIRMED');
 
     return payment;
   }
 
-  /**
-   * Gets a payment by its ID.
-   * @param id The ID of the payment to retrieve.
-   * @returns The payment if found.
-   * @throws NotFoundError if the payment is not found.
-   */
-  async getPaymentById(id: string): Promise<Payment> {
-    const payment = this.paymentRepository.findById(id);
+  async getById(id: number): Promise<Payment> {
+    const payment = await this.paymentRepository.findById(id);
     if (!payment) {
       throw new NotFoundError('Payment not found');
     }
     return payment;
   }
 
-  /**
-   * Gets the payment history for a user.
-   * @param userId The ID of the user.
-   * @returns A list of payments for the user.
-   */
-  async getPaymentHistory(userId: string): Promise<Payment[]> {
-    const reservations = this.reservationRepository.findAll().filter(r => r.userId === userId);
-    const reservationIds = reservations.map(r => r.id);
-    return this.paymentRepository.findAll().filter(p => reservationIds.includes(p.reservationId));
+  async getHistory(userId: number): Promise<Payment[]> {
+    return await this.paymentRepository.findByUserId(userId);
   }
 }

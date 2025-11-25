@@ -1,54 +1,42 @@
 // src/controllers/CaravanController.ts
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { CaravanService } from '../services/CaravanService';
-import { BadRequestError } from '../errors/HttpErrors';
 
-export const createCaravanController = (caravanService: CaravanService) => {
+export class CaravanController {
+  constructor(private service: CaravanService) { }
 
-  const createCaravan = async (req: Request, res: Response, next: NextFunction) => {
+  create = async (req: Request, res: Response) => {
     try {
-      const { id, hostId, name, capacity, amenities, photos, location, dailyRate } = req.body;
-
-      if (!id || !hostId || !name || !capacity || !amenities || !location || !dailyRate) {
-        throw new BadRequestError('Missing required fields for caravan creation');
-      }
-
-      const newCaravan = await caravanService.createCaravan(
-        id,
-        hostId,
-        name,
-        capacity,
-        amenities,
-        photos || [],
-        location,
-        dailyRate
-      );
-      
-      res.status(201).json({ message: 'Caravan created successfully', caravan: newCaravan });
-    } catch (error) {
-      next(error);
+      const caravan = await this.service.create(req.body);
+      res.status(201).json(caravan);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
     }
   };
 
-  const getCaravanById = async (req: Request, res: Response, next: NextFunction) => {
+  getById = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const caravan = await caravanService.getCaravanById(id);
-      res.status(200).json(caravan);
-    } catch (error) {
-      next(error);
+      const caravan = await this.service.getById(Number(id));
+      res.json(caravan);
+    } catch (e) {
+      res.status(404).json({ error: (e as Error).message });
     }
   };
 
-  const getAllCaravans = async (req: Request, res: Response, next: NextFunction) => {
+  getAll = async (req: Request, res: Response) => {
     try {
-      const allCaravans = await caravanService.getAllCaravans();
-      res.status(200).json(allCaravans);
-    } catch (error) {
-      next(error);
+      const { location, minPrice, maxPrice } = req.query;
+      const filters = {
+        location: location as string,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined
+      };
+      const caravans = await this.service.getAll(filters);
+      res.json(caravans);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
     }
   };
-
-  return { createCaravan, getCaravanById, getAllCaravans };
-};
+}

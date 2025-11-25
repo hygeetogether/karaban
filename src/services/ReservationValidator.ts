@@ -1,24 +1,37 @@
-// src/services/ReservationValidator.ts
+import { Reservation } from '../models/reservation';
+import { ReservationRepository } from '../repositories/ReservationRepository';
 
-import { Reservation } from '../models/Reservation';
-
+/**
+ * ReservationValidator contains domain validation logic for reservations.
+ * It is stateless except for the injected repository, allowing easy unit testing.
+ */
 export class ReservationValidator {
+  constructor(private repo: ReservationRepository) { }
+
   /**
-   * Checks for overlapping reservations for a given caravan.
-   * @param reservation The reservation to be checked.
-   * @param existingReservations An array of existing reservations for the same caravan.
-   * @returns boolean True if there is an overlap, false otherwise.
+   * Validates a reservation:
+   *   - startDate must be before endDate
+   *   - no overlapping reservation for the same caravan
+   * Returns an object with `valid` flag and optional `reason`.
    */
-  hasOverlap(reservation: Reservation, existingReservations: Reservation[]): boolean {
-    for (const existing of existingReservations) {
-      if (
-        (reservation.startDate >= existing.startDate && reservation.startDate < existing.endDate) ||
-        (reservation.endDate > existing.startDate && reservation.endDate <= existing.endDate) ||
-        (reservation.startDate <= existing.startDate && reservation.endDate >= existing.endDate)
-      ) {
-        return true; // Overlap found
-      }
+  async isValid(reservation: Reservation): Promise<{ valid: boolean; reason?: string }> {
+    const { startDate, endDate, caravanId } = reservation;
+    if (startDate >= endDate) {
+      return { valid: false, reason: 'Start date must be before end date.' };
     }
-    return false; // No overlap
+    // Check overlap with existing reservations of the same caravan
+    const existing = await this.repo.findByCaravanId(caravanId);
+    const overlap = existing.some(r => {
+      // inclusive overlap check
+      return (
+        (startDate >= r.startDate && startDate <= r.endDate) ||
+        (endDate >= r.startDate && endDate <= r.endDate) ||
+        (r.startDate >= startDate && r.startDate <= endDate)
+      );
+    });
+    if (overlap) {
+      return { valid: false, reason: 'Reservation dates overlap with an existing reservation.' };
+    }
+    return { valid: true };
   }
 }

@@ -1,30 +1,43 @@
 // src/controllers/ReviewController.ts
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { ReviewService } from '../services/ReviewService';
-import { BadRequestError } from '../errors/HttpErrors';
 
-export const createReviewController = (reviewService: ReviewService) => {
+export class ReviewController {
+  constructor(private service: ReviewService) { }
 
-  const createReview = async (req: Request, res: Response, next: NextFunction) => {
+  create = async (req: Request, res: Response) => {
     try {
-      const { id, reservationId, reviewerId, revieweeId, rating, comment } = req.body;
-
-      if (!id || !reservationId || !reviewerId || !revieweeId || rating === undefined || !comment) {
-        throw new BadRequestError('Missing required fields for review');
-      }
-
-      if (typeof rating !== 'number' || rating < 1 || rating > 5) {
-        throw new BadRequestError('Rating must be a number between 1 and 5');
-      }
-
-      const review = await reviewService.createReview(id, reservationId, reviewerId, revieweeId, rating, comment);
-
-      res.status(201).json({ message: 'Review created successfully', review });
-    } catch (error) {
-      next(error);
+      const { reservationId, reviewerId, rating, comment } = req.body;
+      const review = await this.service.create(
+        Number(reservationId),
+        Number(reviewerId),
+        Number(rating),
+        comment
+      );
+      res.status(201).json(review);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
     }
   };
 
-  return { createReview };
-};
+  getById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const review = await this.service.getById(Number(id));
+      res.json(review);
+    } catch (e) {
+      res.status(404).json({ error: (e as Error).message });
+    }
+  };
+
+  getByCaravanId = async (req: Request, res: Response) => {
+    try {
+      const { caravanId } = req.params;
+      const reviews = await this.service.getByCaravanId(Number(caravanId));
+      res.json(reviews);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
+    }
+  };
+}

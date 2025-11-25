@@ -1,13 +1,14 @@
 // src/routes/ReviewRoutes.ts
 
 import { Router } from 'express';
-import { createReviewController } from '../controllers/ReviewController';
+import { ReviewController } from '../controllers/ReviewController';
 import { reviewService } from '../container';
 
 const router = Router();
+const controller = new ReviewController(reviewService);
 
-const reviewController = createReviewController(reviewService);
-
-router.post('/', reviewController.createReview);
+router.post('/', controller.create);
+router.get('/:id', controller.getById);
+router.get('/caravan/:caravanId', controller.getByCaravanId);
 
 export default router;

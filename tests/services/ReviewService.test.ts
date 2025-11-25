@@ -5,15 +5,21 @@ import { ReviewRepository } from '../../src/repositories/ReviewRepository';
 import { ReservationRepository } from '../../src/repositories/ReservationRepository';
 import { UserRepository } from '../../src/repositories/UserRepository';
 import { CaravanRepository } from '../../src/repositories/CaravanRepository';
-import { User } from '../../src/models/User';
-import { Caravan } from '../../src/models/Caravan';
-import { Reservation } from '../../src/models/Reservation';
-import { NotFoundError, BadRequestError } from '../../src/errors/HttpErrors';
+import { Reservation } from '../../src/models/reservation';
 
 jest.mock('../../src/repositories/ReviewRepository');
 jest.mock('../../src/repositories/ReservationRepository');
 jest.mock('../../src/repositories/UserRepository');
 jest.mock('../../src/repositories/CaravanRepository');
+jest.mock('../../src/lib/prisma', () => ({
+  __esModule: true,
+  default: {
+    review: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+    reservation: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+    user: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+    caravan: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+  },
+}));
 
 describe('ReviewService', () => {
   let reviewService: ReviewService;
@@ -22,60 +28,48 @@ describe('ReviewService', () => {
   let mockUserRepo: jest.Mocked<UserRepository>;
   let mockCaravanRepo: jest.Mocked<CaravanRepository>;
 
-  const testUser = new User('user1', 'test', 'test@test.com', 'guest', 'Test User', '123', 'pass');
-  const testHost = new User('host1', 'host', 'host@test.com', 'host', 'Host', '456', 'pass');
-  const testCaravan = new Caravan('caravan1', 'host1', 'Test Caravan', 4, [], [], { latitude: 0, longitude: 0 }, 100);
-  const completedReservation = new Reservation('res1', 'user1', 'caravan1', new Date(), new Date(), 100, 'completed');
-
   beforeEach(() => {
     mockReviewRepo = new ReviewRepository() as jest.Mocked<ReviewRepository>;
     mockReservationRepo = new ReservationRepository() as jest.Mocked<ReservationRepository>;
     mockUserRepo = new UserRepository() as jest.Mocked<UserRepository>;
     mockCaravanRepo = new CaravanRepository() as jest.Mocked<CaravanRepository>;
 
-    reviewService = new ReviewService(mockReviewRepo, mockReservationRepo, mockUserRepo, mockCaravanRepo);
+    reviewService = new ReviewService(
+      mockReviewRepo,
+      mockReservationRepo,
+      mockUserRepo,
+      mockCaravanRepo
+    );
   });
 
-  describe('createReview', () => {
+  describe('create', () => {
     it('should create a review successfully', async () => {
-      mockReservationRepo.findById.mockReturnValue(completedReservation);
-      mockUserRepo.findById.mockReturnValue(testUser);
-      mockCaravanRepo.findById.mockReturnValue(testCaravan);
+      const reservation: Reservation = {
+        id: 1,
+        userId: 1,
+        caravanId: 1,
+        startDate: new Date(),
+        endDate: new Date(),
+        status: 'APPROVED',
+        totalPrice: 100,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-      const review = await reviewService.createReview('rev1', 'res1', 'user1', 'host1', 5, 'Great trip!');
+      mockReservationRepo.findById.mockReturnValue(Promise.resolve(reservation));
+      mockReviewRepo.add.mockReturnValue(Promise.resolve());
+
+      const review = await reviewService.create(1, 1, 5, 'Great!');
 
       expect(review).toBeDefined();
       expect(review.rating).toBe(5);
-      expect(review.comment).toBe('Great trip!');
-      expect(mockReviewRepo.add).toHaveBeenCalledWith(review);
+      expect(mockReviewRepo.add).toHaveBeenCalled();
     });
 
-    it('should update the host rating after a review is created', async () => {
-        const host = new User('host1', 'host', 'host@test.com', 'host', 'Host', '456', 'pass');
-        mockReservationRepo.findById.mockReturnValue(completedReservation);
-        mockUserRepo.findById.mockReturnValue(host);
-        mockCaravanRepo.findById.mockReturnValue(testCaravan);
+    it('should throw error if reservation not found', async () => {
+      mockReservationRepo.findById.mockReturnValue(Promise.resolve(undefined));
 
-        await reviewService.createReview('rev1', 'res1', 'user1', 'host1', 4, 'Good caravan');
-
-        expect(mockUserRepo.findById).toHaveBeenCalledWith('host1');
-        expect(host.rating).toBe(4);
-      });
-
-    it('should throw BadRequestError if reservation is not completed', async () => {
-      const pendingReservation = new Reservation('res1', 'user1', 'caravan1', new Date(), new Date(), 100, 'pending');
-      mockReservationRepo.findById.mockReturnValue(pendingReservation);
-      mockUserRepo.findById.mockReturnValue(testUser);
-
-      await expect(reviewService.createReview('rev1', 'res1', 'user1', 'host1', 5, 'comment')).rejects.toThrow(BadRequestError);
-    });
-
-    it('should throw BadRequestError if reviewer is not the user on the reservation', async () => {
-      mockReservationRepo.findById.mockReturnValue(completedReservation);
-      const wrongUser = new User('user2', 'test2', 'test2@test.com', 'guest', 'Test User 2', '123', 'pass');
-      mockUserRepo.findById.mockReturnValue(wrongUser);
-
-      await expect(reviewService.createReview('rev1', 'res1', 'user2', 'host1', 5, 'comment')).rejects.toThrow(BadRequestError);
+      await expect(reviewService.create(1, 1, 5, 'Great!')).rejects.toThrow('Reservation not found');
     });
   });
 });

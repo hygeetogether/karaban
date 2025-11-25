@@ -1,0 +1,20 @@
+- [x] Set up project directory structure
+- [x] Implement backend models (User, Caravan, Reservation, Payment, Review)
+- [x] Implement repositories (in‑memory first, later PostgreSQL)
+- [x] Implement services and validators (ReservationValidator, PricingStrategy)
+- [x] Implement Reservation API (Controller & Routes)
+- [x] Implement other Controllers & Routes (User, Caravan, Payment, Review)
+- [x] Add Dockerfile and docker-compose for backend
+- [x] Verify basic API endpoints with curl/Postman
+- [x] Write comprehensive unit tests (jest, 70% coverage) - *Service tests fixed and passing*
+- [x] Document README, DESIGN, and deployment steps
+- [x] Implement frontend skeleton (Vite + React TS) and design system
+- [x] Implement Caravan Listing Page (Frontend)
+- [x] Implement Caravan Detail Page (Frontend)
+- [x] Implement Frontend Reservation Flow (Service, UI, My Trips)
+- [x] Implement Review System (Backend & Frontend)
+- [x] Implement Mock Payment System (Backend & Frontend)
+- [x] Implement Map Integration (Frontend)
+- [x] Integrate PostgreSQL (switched to SQLite for local dev) with Prisma ORM
+- [x] Deploy to EC2 (Level 1) and add HTTPS (Level 2)
+- [x] Add domain, CI/CD, DB, logging (Level 3)

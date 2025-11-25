@@ -1,36 +1,38 @@
 // src/controllers/PaymentController.ts
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { PaymentService } from '../services/PaymentService';
-import { BadRequestError } from '../errors/HttpErrors';
 
-export const createPaymentController = (paymentService: PaymentService) => {
+export class PaymentController {
+  constructor(private service: PaymentService) { }
 
-  const createPayment = async (req: Request, res: Response, next: NextFunction) => {
+  create = async (req: Request, res: Response) => {
     try {
-      const { id, reservationId } = req.body;
-
-      if (!id || !reservationId) {
-        throw new BadRequestError('id and reservationId are required');
-      }
-
-      const payment = await paymentService.createPayment(id, reservationId);
-
-      res.status(201).json({ message: 'Payment processed successfully', payment });
-    } catch (error) {
-      next(error);
+      const { reservationId, amount } = req.body;
+      const payment = await this.service.create(Number(reservationId), Number(amount));
+      res.status(201).json(payment);
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
     }
   };
 
-  const getPaymentHistory = async (req: Request, res: Response, next: NextFunction) => {
+  getById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const payment = await this.service.getById(Number(id));
+      res.json(payment);
+    } catch (e) {
+      res.status(404).json({ error: (e as Error).message });
+    }
+  };
+
+  getHistory = async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
-      const payments = await paymentService.getPaymentHistory(userId);
-      res.status(200).json(payments);
-    } catch (error) {
-      next(error);
+      const payments = await this.service.getHistory(Number(userId));
+      res.json(payments);
+    } catch (e) {
+      res.status(500).json({ error: (e as Error).message });
     }
   };
-
-  return { createPayment, getPaymentHistory };
-};
+}

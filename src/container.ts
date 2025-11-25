@@ -23,19 +23,15 @@ export const reviewRepository = new ReviewRepository();
 // Create instances of services
 export const userService = new UserService(userRepository);
 export const caravanService = new CaravanService(caravanRepository, userRepository);
-export const reservationValidator = new ReservationValidator();
+export const reservationValidator = new ReservationValidator(reservationRepository);
 export const reservationService = new ReservationService(
   reservationRepository,
-  caravanRepository,
-  userRepository,
   reservationValidator
 );
 export const paymentService = new PaymentService(
-  userRepository,
-  reservationRepository,
   paymentRepository,
-  caravanRepository,
-  reservationService
+  reservationRepository,
+  userRepository
 );
 export const reviewService = new ReviewService(
   reviewRepository,

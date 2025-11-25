@@ -1,51 +1,14 @@
-// src/models/User.ts
+import { Role } from '@prisma/client';
 
-export class User {
-  id: string;
-  username: string;
-  email: string;
-  password?: string;
-  role: 'host' | 'guest';
+export { Role };
+
+export interface User {
+  id: number;
   name: string;
-  contact: string;
-  rating: number;
-  identityVerified: boolean;
-  balance?: number;
-
-  constructor(
-    id: string,
-    username: string,
-    email: string,
-    role: 'host' | 'guest',
-    name: string,
-    contact: string,
-    password?: string,
-    balance: number = 0,
-    rating: number = 0,
-    identityVerified: boolean = false,
-  ) {
-    this.id = id;
-    this.username = username;
-    this.email = email;
-    this.password = password;
-    this.role = role;
-    this.name = name;
-    this.contact = contact;
-    this.rating = rating;
-    this.identityVerified = identityVerified;
-    this.balance = balance;
-  }
-
-  updateProfile(name: string, contact: string): void {
-    this.name = name;
-    this.contact = contact;
-  }
-
-  verifyIdentity(): void {
-    this.identityVerified = true;
-  }
-
-  updateBalance(amount: number): void {
-    this.balance = (this.balance || 0) + amount;
-  }
+  email: string;
+  phone?: string | null;
+  role: Role;
+  rating?: number | null; // 1-5 average rating
+  createdAt: Date;
+  updatedAt: Date;
 }

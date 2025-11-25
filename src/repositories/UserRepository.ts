@@ -1,28 +1,134 @@
-// src/repositories/UserRepository.ts
-
-import { User } from '../models/User';
+import prisma from '../lib/prisma';
+import { User, Role } from '../models/user';
 
 export class UserRepository {
-  private users: Map<string, User> = new Map();
-
-  add(user: User): void {
-    this.users.set(user.id, user);
-  }
-
-  findById(id: string): User | undefined {
-    return this.users.get(id);
-  }
-
-  findByEmail(email: string): User | undefined {
-    for (const user of this.users.values()) {
-      if (user.email === email) {
-        return user;
+  async add(user: User): Promise<void> {
+    await prisma.user.create({
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
       }
-    }
-    return undefined;
+    });
   }
 
-  findAll(): User[] {
-    return Array.from(this.users.values());
+  async findById(id: number): Promise<User | undefined> {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) return undefined;
+    return {
+      ...user,
+      role: user.role as Role
+    };
   }
-}
+
+  async findByEmail(email: string): Promise<User | undefined> {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return undefined;
+    import prisma from '../lib/prisma';
+    import { User, Role } from '../models/user';
+
+    export class UserRepository {
+      async add(user: User): Promise<void> {
+        await prisma.user.create({
+          data: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+          }
+        });
+      }
+
+      async findById(id: number): Promise<User | undefined> {
+        const user = await prisma.user.findUnique({ where: { id } });
+        if (!user) return undefined;
+        return {
+          ...user,
+          role: user.role as Role
+        };
+      }
+
+      async findByEmail(email: string): Promise<User | undefined> {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return undefined;
+        return {
+          ...user,
+          role: user.role as Role
+        };
+      }
+
+      async findAll(): Promise<User[]> {
+        const users = await prisma.user.findMany();
+        return users.map(user => ({
+          ...user,
+          role: user.role as Role
+        }));
+      }
+
+      async update(id: number, updates: Partial<User>): Promise<User | undefined> {
+        try {
+          const user = await prisma.user.update({
+            where: { id },
+            import prisma from '../lib/prisma';
+            import { User, Role } from '../models/user';
+
+            export class UserRepository {
+            async add(user: User): Promise<void> {
+              await prisma.user.create({
+                data: {
+                  id: user.id,
+                  name: user.name,
+                  email: user.email,
+                  role: user.role,
+                  createdAt: user.createdAt,
+                  updatedAt: user.updatedAt
+                }
+              });
+            }
+
+  async findById(id: number): Promise<User | undefined> {
+              const user = await prisma.user.findUnique({ where: { id } });
+              if (!user) return undefined;
+              return {
+                ...user,
+                role: user.role as Role
+              };
+            }
+
+  async findByEmail(email: string): Promise<User | undefined> {
+              const user = await prisma.user.findUnique({ where: { email } });
+              if (!user) return undefined;
+              return {
+                ...user,
+                role: user.role as Role
+              };
+            }
+
+  async findAll(): Promise<User[]> {
+              const users = await prisma.user.findMany();
+              return users.map(user => ({
+                ...user,
+                role: user.role as Role
+              }));
+            }
+
+  async update(id: number, updates: Partial<User>): Promise<User | undefined> {
+              try {
+                const user = await prisma.user.update({
+                  where: { id },
+                  data: updates
+                });
+                return {
+                  ...user,
+                  role: user.role as Role
+                };
+              } catch (error) {
+                return undefined;
+              }
+            }
+          }

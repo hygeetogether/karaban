@@ -1,35 +1,12 @@
-// src/models/Payment.ts
+import { PaymentStatus } from '@prisma/client';
 
-export class Payment {
-  id: string;
-  reservationId: string;
+export { PaymentStatus };
+
+export interface Payment {
+  id: number;
+  reservationId: number;
+  userId?: number | null;
   amount: number;
   paymentDate: Date;
-  status: 'pending' | 'completed' | 'failed';
-
-  constructor(
-    id: string,
-    reservationId: string,
-    amount: number,
-    paymentDate: Date,
-    status: 'pending' | 'completed' | 'failed' = 'pending',
-  ) {
-    this.id = id;
-    this.reservationId = reservationId;
-    this.amount = amount;
-    this.paymentDate = paymentDate;
-    this.status = status;
-  }
-
-  complete(): void {
-    if (this.status === 'pending') {
-      this.status = 'completed';
-    }
-  }
-
-  fail(): void {
-    if (this.status === 'pending') {
-      this.status = 'failed';
-    }
-  }
+  status: PaymentStatus;
 }

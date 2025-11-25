@@ -1,6 +1,4 @@
-// src/services/ReviewService.ts
-
-import { Review } from '../models/Review';
+import { Review } from '../models/review';
 import { ReviewRepository } from '../repositories/ReviewRepository';
 import { ReservationRepository } from '../repositories/ReservationRepository';
 import { UserRepository } from '../repositories/UserRepository';
@@ -13,67 +11,66 @@ export class ReviewService {
     private reservationRepository: ReservationRepository,
     private userRepository: UserRepository,
     private caravanRepository: CaravanRepository
-  ) {}
+  ) { }
 
-  /**
-   * Creates a new review for a completed reservation.
-   * @param id The review's ID.
-   * @param reservationId The ID of the reservation.
-   * @param reviewerId The ID of the user writing the review.
-   * @param revieweeId The ID of the user or caravan being reviewed.
-   * @param rating The rating from 1 to 5.
-   * @param comment The review comment.
-   * @returns The newly created review.
-   */
-  async createReview(
-    id: string,
-    reservationId: string,
-    reviewerId: string,
-    revieweeId: string,
+  async create(
+    reservationId: number,
+    reviewerId: number,
     rating: number,
     comment: string
   ): Promise<Review> {
-    const reservation = this.reservationRepository.findById(reservationId);
+    const reservation = await this.reservationRepository.findById(reservationId);
     if (!reservation) {
       throw new NotFoundError('Reservation not found');
     }
 
-    if (reservation.status !== 'completed') {
-      throw new BadRequestError('Can only review completed reservations');
+    // Check if reservation is completed (assuming 'APPROVED' or 'COMPLETED' status logic)
+    // For MVP, let's say only APPROVED can be reviewed or we need a COMPLETED status.
+    if (reservation.status !== 'APPROVED') {
+      throw new BadRequestError('Can only review approved reservations');
     }
 
     if (reservation.userId !== reviewerId) {
-      throw new BadRequestError('Only the user who made the reservation can write a review');
+      throw new BadRequestError('Only the guest can write a review');
     }
 
-    const review = new Review(id, reservationId, reviewerId, revieweeId, rating, comment, new Date());
-    this.reviewRepository.add(review);
+    const review: Review = {
+      id: 0, // Placeholder for Prisma
+      reservationId,
+      reviewerId,
+      revieweeId: reservation.caravanId, // Reviewing the caravan/host
+      rating,
+      comment,
+      reviewDate: new Date()
+    };
 
-    // Update the rating of the host or caravan
-    const caravan = this.caravanRepository.findById(reservation.caravanId);
+    await this.reviewRepository.add(review);
+
+    // Update host rating
+    const caravan = await this.caravanRepository.findById(reservation.caravanId);
     if (caravan) {
-        const host = this.userRepository.findById(caravan.hostId);
-        if (host) {
-            // In a real application, you would calculate the average rating
-            host.rating = rating;
-        }
+      const host = await this.userRepository.findById(caravan.ownerId);
+      if (host) {
+        // In a real app, we would calculate the average from all reviews.
+        // For MVP, we'll just update it to the new rating or a simple average if we had previous count.
+        // Let's just set it to the new rating for simplicity or maybe (old + new) / 2 if old exists.
+        const newRating = host.rating ? (host.rating + rating) / 2 : rating;
+        await this.userRepository.update(host.id, { rating: newRating });
+      }
     }
-
 
     return review;
   }
 
-  /**
-   * Gets a review by its ID.
-   * @param id The ID of the review to retrieve.
-   * @returns The review if found.
-   * @throws NotFoundError if the review is not found.
-   */
-  async getReviewById(id: string): Promise<Review> {
-    const review = this.reviewRepository.findById(id);
+  async getById(id: number): Promise<Review> {
+    const review = await this.reviewRepository.findById(id);
     if (!review) {
       throw new NotFoundError('Review not found');
     }
     return review;
+  }
+
+  async getByCaravanId(caravanId: number): Promise<Review[]> {
+    return this.reviewRepository.findByCaravanId(caravanId);
   }
 }
